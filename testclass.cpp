@@ -7,14 +7,13 @@ testClass::testClass(QWidget *parent)//构造函数
     : QMainWindow(parent),
       ui(new Ui::testClass)
 {
-    rej = new reject();//帮助窗口的类的实例化
-    Setting = new setting();
+    rej=NULL;
+    Setting=NULL;
     ui->initUi(this);//初始化UI界面
     QObject::connect(this, SIGNAL(tempTwShow()), this, SLOT(SlotTempTwShow()));
     th_exit=1;//初始化 搜索线程 可以执行
     initEnd=0;
     th=std::thread(&testClass::init, this);
-
 }
 
 testClass::~testClass()
@@ -25,38 +24,34 @@ testClass::~testClass()
 
 void testClass::init()
 {
-    if(!isAdmin()) errorBox(u8("请以管理员身份运行\n").toLocal8Bit().toStdString());
-    if(access("C:\\Program Files\\FindFile\\driver.dat", F_OK )==-1 )
+    cout<<"start!!!!!!!!!!!\n";
+//    if(!InitAndCon()) return;
+    if(!isAdmin()) errorBox(u8("请以管理员身份运行\n").toLocal8Bit().toStdString());//检查是否是以管理员运行的
+    if(access("C:\\Program Files\\FindFile\\driver.dat", F_OK )==-1 || access("out.dat", F_OK)==-1)//检查两个文件是否存在
     {
         if(access("C:\\Program Files\\FindFile", 0) != 0) mkdir("C:\\Program Files\\FindFile");
         getDriver();//获取所有为NTFS文件系统的磁盘名
         outDriver();
     }
-    string path=getcwd(NULL, 0);
+    cout<<"get driver ok!\n";
+    string path=getcwd(NULL, 0);//获取服务程序所在位置
     path+="\\AService.exe";
-    SC_HANDLE sh=OpenSCManager(NULL,NULL,SC_MANAGER_CREATE_SERVICE);
+    SC_HANDLE sh=OpenSCManager(NULL,NULL,SC_MANAGER_CREATE_SERVICE);//打开服务管理器
     SC_HANDLE ch=CreateServiceA(sh,"FindFileService","FindFileService",SERVICE_ALL_ACCESS,
         SERVICE_WIN32_OWN_PROCESS,SERVICE_AUTO_START,SERVICE_ERROR_NORMAL,path.c_str(),
-        NULL,NULL,"",NULL,"");
+        NULL,NULL,"",NULL,"");//尝试创建服务
     if(ch) StartService(ch,0,NULL);
     else ch=OpenServiceA(sh, "FindFileService", SERVICE_START | SERVICE_QUERY_STATUS | SERVICE_STOP);
-
     SERVICE_STATUS sta;
-    QueryServiceStatus(ch, &sta);
-    if(access("out.dat", F_OK)==-1 ||
-            access("C:\\Program Files\\FindFile\\update.dat", F_OK )==-1 ||
-            sta.dwCurrentState==SERVICE_STOPPED)
+    QueryServiceStatus(ch, &sta);//查询服务状态
+    cout<<"Query Service Status ok\n";
+    if(access("out.dat", F_OK)==0 &&
+            access("C:\\Program Files\\FindFile\\update.dat", F_OK )==0 &&
+            sta.dwCurrentState==SERVICE_RUNNING)//文件均存在且服务为启动状态，说明程序的配置未被改变，可以直接运行
     {
-        remove("C:\\Program Files\\FindFile\\update.dat");
-        ofstream out("C:\\Program Files\\FindFile\\update.dat",ios::app|ios::binary);
-        out.close();
-        um[0]={"\\",7,0,0,0};//所有磁盘的根节点，实际不存在。 节点内容依次为文件名，文件类型，父节点位置，孩子节点位置，兄弟节点位置
-        endx=0;//树的最后一个节点的位置
-        startToGet();//开始获取所有文件名
-        StartService(ch,0,NULL);
-    }
-    else
-    {
+//        freopen("D:\\out.txt", "w", stdout);
+//        printf("is executed\n");
+//        freopen("CON","w", stdout);
         if(ui->english_action->isChecked())
             ui->label->setText("now updating...");
         else
@@ -80,6 +75,19 @@ void testClass::init()
         }
         in.close();
         readFile();
+    }
+    else
+    {
+        cout<<"start to research!\n";
+        um.clear();
+        remove("C:\\Program Files\\FindFile\\update.dat");
+        ofstream out("C:\\Program Files\\FindFile\\update.dat",ios::app|ios::binary);
+        out.close();
+        cout<<"start to get\n";
+        um[0]={"\\",7,0,0,0};//所有磁盘的根节点，实际不存在。 节点内容依次为文件名，文件类型，父节点位置，孩子节点位置，兄弟节点位置
+        endx=0;//树的最后一个节点的位置
+        startToGet();//开始获取所有文件名
+        StartService(ch,0,NULL);
     }
 
     CloseServiceHandle(sh);
@@ -107,7 +115,6 @@ void testClass::outDriver()
 void testClass::readFile()
 {
     int first, len, type, father, son, bro;//文件位置，字符串长度，文件类型，父节点位置，子节点位置，兄弟节点位置
-//    char na[MAX_PATH];//文件名。没有new，就可以不delete了
     clock_t st=clock();
     ifstream in("out.dat", ios::in|ios::binary);
     //数据格式： endx（最后一个节点的位置）   文件位置 文件名长度 文件名 类型 父节点位置 子节点位置 兄弟节点位置。。。
@@ -176,7 +183,7 @@ void testClass::openFilePath()
     {
         for(int j=i.topRow();j<=i.bottomRow();j++)
         {
-            system(("explorer /select,"+ans[j].second).c_str());//打开资源管理器并选中文件
+            WinExec(("explorer /select,"+ans[j].second).c_str(), SW_SHOWDEFAULT);//打开资源管理器并选中文件
         }
     }
 }
@@ -188,7 +195,7 @@ void testClass::runFile()
     {
         for(int j=i.topRow();j<=i.bottomRow();j++)
         {
-            system(("start "+ans[j].second).c_str());
+            ShellExecuteA(NULL, "open", ans[j].second.c_str(), NULL, NULL, SW_SHOWDEFAULT);
         }
     }
 }
@@ -443,12 +450,15 @@ void testClass::onlyExecutable()
 //显示帮助，没有帮助。。。
 void testClass::showHelp()
 {
-    rej->te->setText(u8("sorry, no help"));
+    if(rej==NULL) rej=new reject();
+    rej->te->setText(u8("程序第一次启动可能会需要一段时间，请耐心等待\nresearch/重新搜索会重启程序，然后重新搜索整个磁盘文件。当有新的NTFS卷加入或者程序搜索结果有误时可使用此功能\n\
+在设置界面可以设置搜索结果数量限制，输入0则表示没有限制"));
     rej->show();
 }
 //搜索语法
 void testClass::searchGrammer()
 {
+    if(rej==NULL) rej=new reject();
     rej->te->setText(u8("通配符:\n\
                         *	匹配 0 个或多个字符.\n\
                         ?	匹配 1 个字符.\n\
@@ -461,6 +471,7 @@ void testClass::searchGrammer()
 //正则表达式语法
 void testClass::regexGrammer()
 {
+    if(rej==NULL) rej=new reject();
     rej->te->setText(u8("正则表达式语法:\n\
                             \n\
                             a|b		 匹配 a 或 b\n\
@@ -490,6 +501,7 @@ void testClass::regexGrammer()
 
 void testClass::show_setting()
 {
+    if(Setting==NULL) Setting=new setting();
     Setting->show();
     Setting->lineEdit->setFocus();
 }
@@ -536,10 +548,10 @@ void testClass::englishUse()
     QString temp=ui->label->text();
     string s=temp.toLocal8Bit().toStdString();
     if(s[0]>='a'&&s[0]<='z') return;//当前显示语言为英文
-    if(s=="正在搜索。。。") ui->label->setText(u8("now searching..."));
-    else if(s=="正在排序。。。") ui->label->setText(u8("now sorting..."));
-    else if(s=="正在更新。。。") ui->label->setText(u8("now updating..."));
-    else if(s=="现在你可以搜索了。。。") ui->label->setText("now you could search...");
+    if(temp==u8("正在搜索。。。")) ui->label->setText(u8("now searching..."));
+    else if(temp==u8("正在排序。。。")) ui->label->setText(u8("now sorting..."));
+    else if(temp==u8("正在更新。。。")) ui->label->setText(u8("now updating..."));
+    else if(temp==u8("现在你可以搜索了。。。")) ui->label->setText("now you could search...");
     else if(temp.startsWith("正在搜索"))
     {
         char c=s[8];
@@ -562,10 +574,11 @@ void testClass::action1_triggered()
 //程序退出
 void testClass::action2_triggered()
 {
-    delete rej;
-    delete Setting;
-    this->hide();//先隐藏显示窗口，
-//    cout<<"now I will start exit, please wait a little\n";
+    if(rej!=NULL) delete rej;
+    if(Setting!=NULL) delete Setting;
+    this->hide();//先隐藏显示窗口
+
+//    std::cout<<"now I will start exit, please wait a little\n";
     Update_Is_Run=0;//停止监听文件更新
     th_update.join();//等待监听文件更新线程的退出
     for(auto i:dri) delete i;//new了的要delete掉。虽然本程序即使不delete，也不至于内存泄露
@@ -603,7 +616,7 @@ void testClass::action2_triggered()
     }
     out.close();
     clock_t ed=clock();
-//    cout<<"use time:"<<ed-st<<"\nnow application exit!\n";
+//    std::cout<<"use time:"<<ed-st<<"\nnow application exit!\n";
     exit(0);//进程结束，所有申请的资源都会被操作系统回收
 }
 //最小化到系统托盘区
@@ -637,9 +650,12 @@ void testClass::closeEvent(QCloseEvent *e)
     msg->button(QMessageBox::Yes)->setText(u8("是的，确定退出"));
     msg->button(QMessageBox::No)->setText(u8("最小化到托盘区"));
     msg->button(QMessageBox::Cancel)->setText(u8("取消"));
+//    cout<<"start\n";
     int res=msg->exec();
+//    cout<<"res\n";
     if(res == QMessageBox::Yes)
     {
+//        cout<<"ok exit\n";
         action2_triggered();
         e->accept();
     }
@@ -694,6 +710,7 @@ void testClass::insertItem(int lines, std::string name, std::string path)
 //获取所有文件并建树
 void testClass::startToGet()
 {
+//    cout<<"dsfffffffffffff\n";
     int len=dri.size();
 //    cout<<dri.size()<<endl;
     clock_t st=clock();
@@ -705,6 +722,7 @@ void testClass::startToGet()
         else um[0].son=endx+1;
         endx++;
     }//然后获得该节点的子节点，并建树
+//    cout<<"um.size="<<um.size()<<endl;
     for(int i=0;i<len;i++)
     {
         if(ui->english_action->isChecked())
@@ -722,6 +740,7 @@ void testClass::startToGet()
             ui->label->setText(u8(s.c_str()));
         }
         startGet(dri[i], i+1);
+//        startGet(dri[0], 1);
     }
     clock_t ed=clock();
 //    cout<<"init use time: "<<ed-st<<endl;
@@ -975,8 +994,8 @@ void testClass::preView(int a, int b, bool f)
         ui->textEdit->setAlignment(Qt::AlignLeft);
         if(ft==4)//文本文档
         {
-            FILE* p=fopen(fullName, "r");
-            if(!p)
+            ifstream ifs(fullName, ifstream::in);
+            if(!ifs)
             {
                 cout<<"open file fail!\n";
                 ui->textEdit->setText("打开文件失败");
@@ -984,16 +1003,19 @@ void testClass::preView(int a, int b, bool f)
                 ui->textEdit->setAlignment(Qt::AlignCenter);
                 return ;
             }
-            char ch[1005];
+
+            string ch;
             int line=0;
-            while(!feof(p))
+            while(ifs.good())
             {
-                fgets(ch, 1000, p);
-                ui->textEdit->insertPlainText(QString::fromLocal8Bit(ch));
+                getline(ifs, ch);
+                ch+="\n";
+                ui->textEdit->insertPlainText(QString::fromLocal8Bit(ch.c_str()));
                 line++;
                 if(line >= 50) break;
             }
-            fclose(p);
+            ifs.close();
+
             ui->textEdit->moveCursor(QTextCursor::Start, QTextCursor::MoveAnchor);
         }
         else if(ft==3)//图片
@@ -1001,7 +1023,7 @@ void testClass::preView(int a, int b, bool f)
             string s="<img src=\"";//<img src="文件路径">
             s+=fullName;
             s+="\">";
-            cout<<s<<endl;
+//            cout<<s<<endl;
     //        ui->textEdit->setStyleSheet("#img {width:100px;height:auto}");
             ui->textEdit->insertHtml(QString::fromLocal8Bit(s.c_str()));
         }
@@ -1086,4 +1108,17 @@ void testClass::twSelectionChanged()
         ui->textEdit->setAlignment(Qt::AlignCenter);
     }
     else preView(list.at(1)->row(), list.at(1)->column(), 0);
+}
+
+void testClass::Research()
+{
+    Update_Is_Run=0;//停止监听文件更新
+    th_update.join();//等待监听文件更新线程的退出
+    remove("out.dat");
+    ui->label->setText("now restart!");
+    ShellExecuteA(NULL, "open", "exam.exe", NULL, NULL, SW_SHOWDEFAULT);
+//    WinExec("exam.exe", SW_SHOWDEFAULT);
+//    system("start .\\exam.exe");
+    this->hide();
+    exit(0);
 }
