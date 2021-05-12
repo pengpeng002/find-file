@@ -1,3 +1,4 @@
+//对图片的缩放，拖动等的实现
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
 
