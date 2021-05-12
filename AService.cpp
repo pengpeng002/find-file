@@ -1,3 +1,4 @@
+//监听文件更新的服务程序，只负责将文件更改记录写入文件
 #include <stdio.h>
 #include <windows.h>
 #include <string>
@@ -47,7 +48,7 @@ void WINAPI ControlHandle(DWORD op)
 //			SetServiceStatus(ssh,&ss);
 //			isRun=0;
 			break;
-		case SERVICE_CONTROL_INTERROGATE://ѯ��
+		case SERVICE_CONTROL_INTERROGATE://Ñ¯ÎÊ
 			break;
 		case SERVICE_CONTROL_PAUSE:
 			break;
@@ -95,10 +96,10 @@ void watcher(char* vol)
                 memset(file_name, 0, strlen(file_name));
                 WideCharToMultiByte(CP_ACP, 0, info->FileName, info->FileNameLength / 2, file_name, 99, NULL, NULL);
                 string par=vol;
-                par+=file_name;//获取包括文件名在内的文件全路径
+                par+=file_name;//èŽ·å–åŒ…æ‹¬æ–‡ä»¶ååœ¨å†…çš„æ–‡ä»¶å…¨è·¯å¾„
                 string path, name;
                 int len=par.length()-1;
-                for(int i=len;i>=0;i--)//找到最后一个\\， 全面为路径，后面为名字
+                for(int i=len;i>=0;i--)//æ‰¾åˆ°æœ€åŽä¸€ä¸ª\\ï¼Œ å…¨é¢ä¸ºè·¯å¾„ï¼ŒåŽé¢ä¸ºåå­—
                 {
                     if(par[i]=='\\')
                     {
