@@ -13,7 +13,6 @@ public:
     ~reject();//析构函数
     QVBoxLayout *vbl;//布局
     QTextEdit *te;//文本框
-    void isNull();
 signals:
 
 public slots:

@@ -24,7 +24,9 @@
 #include <QScrollBar>
 #include <QHeaderView>
 #include <QComboBox>
+#include <QPainter>
 #include <QLabel>
+#include <QGraphicsView>
 //#include <QToolBar>
 #define u8(x) QObject::trUtf8(x)
 //有点不好写注释，放弃了。想看就自己理解吧。我只是为了方便写代码就按功能放在不同函数里了
@@ -38,7 +40,7 @@ public:
     QAction *openFilePath_action, *runFile_action, *copyPath_action, *delete_action, *rename_action;
     QAction *propertise_action, *export_action, *exit_action, *minimal_action;
     QAction *selectAll_action, *antiSelect_action, *copyFile_action, *cutFile_action;
-    QAction *preview_action, *statusBar_action;
+    QAction *preview_action, *statusBar_action, *research_action;
     QAction *caseSensitive_action, *useRegex_action;
     QAction *all_action, *audio_action, *video_action, *compare_action, *document_action, *picture_action, *exe_action;
     QAction *help_action, *regexGrammer_action, *searchGrammer_action, *setting_action;
@@ -54,10 +56,12 @@ public:
     QTextEdit *textEdit;
     QAxWidget *qaw;
     QSplitter *sp;
-    QLabel *label;
+    QLabel *label, *la;
     QSystemTrayIcon *tray;
     QMenu *menu, *num;
     QAction *action1, *action2;
+    QPainter *painter;
+    QGraphicsView *gview;
 //    QComboBox *combo;
 //    QToolBar *toolBar;
     void initUi(QMainWindow *testClass)
@@ -120,6 +124,7 @@ public:
         cutFile_action->setText(QApplication::translate("testClass", "cut file", Q_NULLPTR));
         preview_action->setText(QApplication::translate("testClass", "preview", Q_NULLPTR));
         statusBar_action->setText(QApplication::translate("testClass", "status bar", Q_NULLPTR));
+        research_action->setText(QApplication::translate("testClass", "research", Q_NULLPTR));
         name_action->setText(QApplication::translate("testClass", "name", Q_NULLPTR));
         path_action->setText(QApplication::translate("testClass", "path", Q_NULLPTR));
         asec_action->setText(QApplication::translate("testClass", "asec", Q_NULLPTR));
@@ -169,6 +174,7 @@ public:
         cutFile_action->setText(QApplication::translate("testClass", "剪切文件", Q_NULLPTR));
         preview_action->setText(QApplication::translate("testClass", "预览", Q_NULLPTR));
         statusBar_action->setText(QApplication::translate("testClass", "状态栏", Q_NULLPTR));
+        research_action->setText(QApplication::translate("testClass", "重新搜索", Q_NULLPTR));
         name_action->setText(QApplication::translate("testClass", "名字", Q_NULLPTR));
         path_action->setText(QApplication::translate("testClass", "路径", Q_NULLPTR));
         asec_action->setText(QApplication::translate("testClass", "升序", Q_NULLPTR));
@@ -207,6 +213,9 @@ private:
         qvbl=new QVBoxLayout(cen);
         hb1=new QHBoxLayout(widget1);
         label=new QLabel(statusBar);
+        painter=new QPainter(textEdit);
+        gview=new QGraphicsView(testClass);
+//        la=new QLabel(testClass);
 //        combo=new QComboBox(testClass);
 //        combo_edit=new QLineEdit(testClass);
 //        toolBar=new QToolBar(testClass);
@@ -262,6 +271,7 @@ private:
         cutFile_action=new QAction(testClass);
         preview_action=new QAction(testClass);
         statusBar_action=new QAction(testClass);
+        research_action=new QAction(testClass);
         caseSensitive_action=new QAction(testClass);
         useRegex_action=new QAction(testClass);
         all_action=new QAction(testClass);
@@ -303,6 +313,7 @@ private:
         QObject::connect(cutFile_action,SIGNAL(triggered(bool)), testClass, SLOT(cutFile()));
         QObject::connect(preview_action,SIGNAL(triggered(bool)), testClass, SLOT(showPreview()));
         QObject::connect(statusBar_action,SIGNAL(triggered(bool)), testClass, SLOT(showStatusBar()));
+        QObject::connect(research_action,SIGNAL(triggered(bool)), testClass, SLOT(Research()));
         QObject::connect(name_action,SIGNAL(triggered(bool)), testClass, SLOT(sortByName()));
         QObject::connect(path_action,SIGNAL(triggered(bool)), testClass, SLOT(sortByPath()));
         QObject::connect(asec_action,SIGNAL(triggered(bool)), testClass, SLOT(sortByAsec()));
@@ -379,6 +390,7 @@ private:
 
         view_menu->addAction(preview_action);
         view_menu->addAction(statusBar_action);
+        view_menu->addAction(research_action);
         view_menu->addSeparator();
         view_menu->addAction(sort_menu->menuAction());
 
@@ -454,9 +466,13 @@ private:
         sp->addWidget(tw);
         sp->addWidget(textEdit);
         sp->addWidget(qaw);
+        sp->addWidget(gview);
+//        sp->addWidget(painter);
+//        sp->addWidget(la);
         sp->setStretchFactor(0,6);
         sp->setStretchFactor(1,4);
         sp->setStretchFactor(2,4);
+        sp->setStretchFactor(3,4);
     }
 
     void setWidgets()//设置各个控件的属性
@@ -484,14 +500,20 @@ private:
         textEdit->setText("请选择要预览的文件");
         textEdit->setEnabled(false);
         textEdit->setAlignment(Qt::AlignCenter);
+//        textEdit->hide();
 
-        qaw->setHidden(true);
+        qaw->setHidden(true);//AppXq0fevzme2pys62n3e0fbqa7peapykr8v
         qaw->setControl("{6BF52A52-394A-11d3-B153-00C04F79FAA6}");
 
         statusBar->addWidget(label);
         statusBar->setSizeGripEnabled(false);
         statusBar->setStyleSheet(QString("QStatusBar::item{border: 0px}"));
         label->setAlignment(Qt::AlignLeft);
+
+
+//        gview->setFixedSize(textEdit->size());
+        gview->hide();
+
 
 //        QStringList sl;
 //        sl<<"100"<<"1000"<<"10000"<<"infinity";

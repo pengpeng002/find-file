@@ -15,8 +15,3 @@ reject::~reject()//析构函数
     delete te;
     delete vbl;
 }
-
-void reject::isNull()
-{
-
-}

@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <vector>
 #include <bits/stdc++.h>
+#include <QDebug>
 #include "search_in_tree.h"
 #include <mutex>
 using namespace std;

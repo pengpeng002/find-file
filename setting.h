@@ -20,13 +20,11 @@ public:
     QPushButton *ok, *cancel;
     QComboBox *comb;
     QLabel *label;
-    void isNull();
 signals:
 
 public slots:
     void setLimit();
     void cancelSet();
-
 };
 
 #endif // SETTING_H

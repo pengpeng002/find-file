@@ -40,8 +40,3 @@ void setting::cancelSet()
     lineEdit->setText(QString("%1").arg(searchLimit));
     this->hide();
 }
-
-void setting::isNull()
-{
-
-}

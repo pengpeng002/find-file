@@ -21,7 +21,13 @@
 #include <bits/stdc++.h>
 #include <windows.h>
 #include <time.h>
+#include <QDebug>
 #include <unistd.h>
+#include <QImageReader>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include "imagewidget.h"
+//#include "get_all_file.h"
 #include "watcher.h"
 #include "setting.h"
 //#include "search_in_tree.h"
@@ -73,11 +79,13 @@ private:
     void outDriver();
     void init();
     void tempTw();
+    void hide_all();
     string old_name;
     std::thread th;//其他线程
     std::thread th_update;//监听更新的线程
     bool th_exit;//是否结束搜索
     bool initEnd;
+    ImageWidget *image;
 //    mutex mu;
 private slots:
     void twShow(int getRet);//表格内容展示，懒加载
@@ -122,6 +130,7 @@ private slots:
     void startRename(QTableWidgetItem*);
     void startRE(int, int);//文件重命名
     void startRE(QTableWidgetItem*);
+    void Research();
 
     void preView(QTableWidgetItem*);
     void show_setting();

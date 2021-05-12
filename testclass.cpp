@@ -3,6 +3,7 @@
 unordered_map<int, node> um;//变量的定义
 int endx;
 bool Update_Is_Run;
+const char* Name;
 testClass::testClass(QWidget *parent)//构造函数
     : QMainWindow(parent),
       ui(new Ui::testClass)
@@ -13,6 +14,11 @@ testClass::testClass(QWidget *parent)//构造函数
     QObject::connect(this, SIGNAL(tempTwShow()), this, SLOT(SlotTempTwShow()));
     th_exit=1;//初始化 搜索线程 可以执行
     initEnd=0;
+    Name=nullptr;
+    hide_all();
+    ui->textEdit->show();
+//    ui->gview->setSceneRect(-35,-21,ui->textEdit->width(), ui->textEdit->height());
+//    ui->gview->setBaseSize(ui->textEdit->size());
     th=std::thread(&testClass::init, this);
 }
 
@@ -24,7 +30,8 @@ testClass::~testClass()
 
 void testClass::init()
 {
-    cout<<"start!!!!!!!!!!!\n";
+//    Sleep(5000);
+//    cout<<"start!!!!!!!!!!!\n";
 //    if(!InitAndCon()) return;
     if(!isAdmin()) errorBox(u8("请以管理员身份运行\n").toLocal8Bit().toStdString());//检查是否是以管理员运行的
     if(access("C:\\Program Files\\FindFile\\driver.dat", F_OK )==-1 || access("out.dat", F_OK)==-1)//检查两个文件是否存在
@@ -33,7 +40,7 @@ void testClass::init()
         getDriver();//获取所有为NTFS文件系统的磁盘名
         outDriver();
     }
-    cout<<"get driver ok!\n";
+//    cout<<"get driver ok!\n";
     string path=getcwd(NULL, 0);//获取服务程序所在位置
     path+="\\AService.exe";
     SC_HANDLE sh=OpenSCManager(NULL,NULL,SC_MANAGER_CREATE_SERVICE);//打开服务管理器
@@ -44,7 +51,7 @@ void testClass::init()
     else ch=OpenServiceA(sh, "FindFileService", SERVICE_START | SERVICE_QUERY_STATUS | SERVICE_STOP);
     SERVICE_STATUS sta;
     QueryServiceStatus(ch, &sta);//查询服务状态
-    cout<<"Query Service Status ok\n";
+//    cout<<"Query Service Status ok\n";
     if(access("out.dat", F_OK)==0 &&
             access("C:\\Program Files\\FindFile\\update.dat", F_OK )==0 &&
             sta.dwCurrentState==SERVICE_RUNNING)//文件均存在且服务为启动状态，说明程序的配置未被改变，可以直接运行
@@ -78,12 +85,13 @@ void testClass::init()
     }
     else
     {
-        cout<<"start to research!\n";
+//        cout<<"start to research!\n";
         um.clear();
         remove("C:\\Program Files\\FindFile\\update.dat");
+
         ofstream out("C:\\Program Files\\FindFile\\update.dat",ios::app|ios::binary);
         out.close();
-        cout<<"start to get\n";
+//        cout<<"start to get\n";
         um[0]={"\\",7,0,0,0};//所有磁盘的根节点，实际不存在。 节点内容依次为文件名，文件类型，父节点位置，孩子节点位置，兄弟节点位置
         endx=0;//树的最后一个节点的位置
         startToGet();//开始获取所有文件名
@@ -97,6 +105,7 @@ void testClass::init()
     else
         ui->label->setText(u8("现在你可以搜索了。。。"));
     initEnd=1;
+//    qDebug() << (sizeof(um)) * um.size() ;
 }
 
 void testClass::outDriver()
@@ -154,6 +163,7 @@ void testClass::startThread()
     }
     Update_Is_Run=1;//值为真表示继续监听。值为假表示停止监听
     th_update=std::thread(updateTree);
+//    qDebug()<<"start thread\n";
 //    std::thread th(updateTree);
 //    th.detach();
 }
@@ -297,7 +307,7 @@ void testClass::antiSelect()
         i->setSelected(false);
     }
 }
-//复制文件到剪切板
+//复制文件到剪切板////////////////////////////////////
 void testClass::copyFile()
 {
     QList<QTableWidgetSelectionRange> list=ui->tw->selectedRanges();
@@ -345,6 +355,9 @@ void testClass::cutFile()
 void testClass::showPreview()
 {
     ui->textEdit->setVisible(ui->preview_action->isChecked());
+    ui->qaw->setHidden(true);
+    ui->gview->setHidden(true);
+    if(ui->gview->scene() != NULL) ui->gview->scene()->clear();
 }
 //show status bar
 void testClass::showStatusBar()
@@ -578,9 +591,10 @@ void testClass::action2_triggered()
     if(Setting!=NULL) delete Setting;
     this->hide();//先隐藏显示窗口
 
-//    std::cout<<"now I will start exit, please wait a little\n";
     Update_Is_Run=0;//停止监听文件更新
+//    qDebug()<<"now I will start exit, please wait a little\n";
     th_update.join();//等待监听文件更新线程的退出
+//    qDebug()<<"thread is exit\n";
     for(auto i:dri) delete i;//new了的要delete掉。虽然本程序即使不delete，也不至于内存泄露
     clock_t st=clock();
     {
@@ -650,12 +664,13 @@ void testClass::closeEvent(QCloseEvent *e)
     msg->button(QMessageBox::Yes)->setText(u8("是的，确定退出"));
     msg->button(QMessageBox::No)->setText(u8("最小化到托盘区"));
     msg->button(QMessageBox::Cancel)->setText(u8("取消"));
-//    cout<<"start\n";
+//    qDebug()<<"start\n";
     int res=msg->exec();
-//    cout<<"res\n";
+    delete msg;
+//    qDebug()<<"res\n";
     if(res == QMessageBox::Yes)
     {
-//        cout<<"ok exit\n";
+//        qDebug()<<"ok exit\n";
         action2_triggered();
         e->accept();
     }
@@ -666,6 +681,7 @@ void testClass::closeEvent(QCloseEvent *e)
     }
     else
     {
+//        qDebug()<<"what fuck?\n";
         e->ignore();
     }
 }
@@ -954,6 +970,73 @@ int testClass::getShowType()
     else if(ui->exe_action->isChecked()) return 6;
     else if(ui->picture_action->isChecked()) return 3;
 }
+void testClass::hide_all()
+{
+    ui->textEdit->setHidden(true);
+    ui->qaw->setHidden(true);
+    ui->qaw->dynamicCall("close()");
+    ui->gview->setHidden(true);
+    if(ui->gview->scene() != NULL) ui->gview->scene()->clear();
+}
+char* u2g(const char* utf8)
+    {
+        int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        wchar_t* wstr = new wchar_t[len+1];
+        memset(wstr, 0, len+1);
+        MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wstr, len);
+        len = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, 0, NULL, NULL);
+        char* str = new char[len+1];
+        memset(str, 0, len+1);
+        WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, len, NULL, NULL);
+        if(wstr) delete[] wstr;
+        return str;
+    }
+    bool IsUTF8(const void* pBuffer, long size)
+    {
+        bool IsUTF8 = true;
+        unsigned char* start = (unsigned char*)pBuffer;
+        unsigned char* end = (unsigned char*)pBuffer + size;
+        while (start < end)
+        {
+            if (*start < 0x80) // (10000000): 值小于0x80的为ASCII字符
+            {
+                start++;
+            }
+            else if (*start < (0xC0)) // (11000000): 值介于0x80与0xC0之间的为无效UTF-8字符
+            {
+                IsUTF8 = false;
+                break;
+            }
+            else if (*start < (0xE0)) // (11100000): 此范围内为2字节UTF-8字符
+            {
+                if (start >= end - 1)
+                    break;
+                if ((start[1] & (0xC0)) != 0x80)
+                {
+                    IsUTF8 = false;
+                    break;
+                }
+                start += 2;
+            }
+            else if (*start < (0xF0)) // (11110000): 此范围内为3字节UTF-8字符
+            {
+                if (start >= end - 2)
+                    break;
+                if ((start[1] & (0xC0)) != 0x80 || (start[2] & (0xC0)) != 0x80)
+                {
+                    IsUTF8 = false;
+                    break;
+                }
+                start += 3;
+            }
+            else
+            {
+                IsUTF8 = false;
+                break;
+            }
+        }
+        return IsUTF8;
+    }
 //文件内容预览
 void testClass::preView(int a, int b, bool f)
 {
@@ -980,13 +1063,45 @@ void testClass::preView(int a, int b, bool f)
 //    cout<<"full name = "<<fullName<<"\n name= "<<name<<", type = "<<ft<<endl;
     if(ft==1 || ft==2)//视频或音频则调用Windows Media Player播放
     {
+        hide_all();
         ui->qaw->dynamicCall("URL",QString::fromLocal8Bit(fullName));
-        ui->textEdit->setHidden(true);
+        if(ui->gview->scene() != NULL) ui->gview->scene()->clear();
+//        ui->gview->scene()->clear();
         ui->qaw->show();
+    }
+    else if(ft==3)//picture
+    {
+        if(ui->gview->width() == 0)
+        {
+            ui->gview->setGeometry(ui->gview->x(), ui->gview->y(), max(ui->textEdit->width(), ui->qaw->width())-50, max(ui->textEdit->height(), ui->qaw->height()));
+        }
+        hide_all();
+        ui->gview->show();
+        ui->gview->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        ui->gview->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        QString s=QString::fromLocal8Bit(fullName);
+        QImageReader qir(s);
+        qir.setDecideFormatFromContent(true);
+        if(qir.canRead())
+        {
+            QImage img;
+            if(qir.read(&img))
+            {
+                QPixmap pixmap=QPixmap::fromImage(img);
+                if(ui->gview->scene() != NULL) ui->gview->scene()->clear();
+                QGraphicsScene  *scene = new QGraphicsScene;
+                image=new ImageWidget(&pixmap);
+                image->setQGraphicsViewWH(ui->gview->width(), ui->gview->height());
+                scene->addItem(image);
+                ui->gview->setScene(scene);
+                return ;
+            }
+        }
+        goto FAIL_PREVIEW;
     }
     else
     {
-        ui->qaw->setHidden(true);
+        hide_all();
         ui->textEdit->show();
         ui->textEdit->setEnabled(true);
         ui->textEdit->setReadOnly(true);
@@ -1010,25 +1125,61 @@ void testClass::preView(int a, int b, bool f)
             {
                 getline(ifs, ch);
                 ch+="\n";
+                if(IsUTF8(ch.c_str(), ch.length()))
+                    ch=u2g(ch.c_str());
                 ui->textEdit->insertPlainText(QString::fromLocal8Bit(ch.c_str()));
                 line++;
-                if(line >= 50) break;
+                if(line >= 500) break;
             }
             ifs.close();
-
             ui->textEdit->moveCursor(QTextCursor::Start, QTextCursor::MoveAnchor);
         }
-        else if(ft==3)//图片
-        {
-            string s="<img src=\"";//<img src="文件路径">
-            s+=fullName;
-            s+="\">";
-//            cout<<s<<endl;
-    //        ui->textEdit->setStyleSheet("#img {width:100px;height:auto}");
-            ui->textEdit->insertHtml(QString::fromLocal8Bit(s.c_str()));
-        }
+
+//        else if(ft==3)//图片
+//        {
+////            Name=fullName;
+////              update();
+////            ui->textEdit->clear();
+//            QString s=QString::fromLocal8Bit(fullName);
+//            QImageReader qir(s);
+//            qir.setDecideFormatFromContent(true);
+//            if(qir.canRead())
+//            {
+//                QImage img;
+//                if(qir.read(&img))
+//                {
+//                    ui->la->setPixmap(QPixmap::fromImage(img.scaled(ui->la->size())));
+//                }
+//                else
+//                {
+//                     qDebug() << "open is failed...." << qir.errorString();
+//                }
+//            }
+//            else
+//            {
+//                qDebug() << "can not read...." << qir.errorString();
+//            }
+////            QImage img;
+////            img.load(fullName);
+////            QPalette pal;
+////            pal.setBrush(QPalette::Background, QBrush(img.scaled(ui->textEdit->size(), Qt::IgnoreAspectRatio)));
+////            ui->textEdit->setPalette(pal);
+////            ui->textEdit->setAutoFillBackground(true);
+
+////            ui->la->setPixmap(QPixmap::fromImage(img.scaled(ui->la->size())));
+////            string s="<img src=\"";//<img src="文件路径">
+////            s+=fullName;
+////            s+="\">";
+//////            cout<<s<<endl;
+//////            ui->textEdit->setStyleSheet("img {width:50px;height:auto}");
+////            ui->textEdit->insertHtml(QString::fromLocal8Bit(s.c_str()));
+
+//        }
         else
         {
+FAIL_PREVIEW:
+            hide_all();
+            ui->textEdit->show();
             ui->textEdit->setText("无法预览");
             ui->textEdit->setEnabled(false);
             ui->textEdit->setAlignment(Qt::AlignCenter);
@@ -1101,7 +1252,7 @@ void testClass::twSelectionChanged()
     if(len > 2) return;
     else if(len==0)
     {
-        ui->qaw->setHidden(true);
+        hide_all();
         ui->textEdit->show();
         ui->textEdit->setText("请选择要预览的文件");
         ui->textEdit->setEnabled(false);
@@ -1116,9 +1267,10 @@ void testClass::Research()
     th_update.join();//等待监听文件更新线程的退出
     remove("out.dat");
     ui->label->setText("now restart!");
-    ShellExecuteA(NULL, "open", "exam.exe", NULL, NULL, SW_SHOWDEFAULT);
+
 //    WinExec("exam.exe", SW_SHOWDEFAULT);
 //    system("start .\\exam.exe");
     this->hide();
+    ShellExecuteA(NULL, "open", "exam.exe", NULL, NULL, SW_SHOWDEFAULT);
     exit(0);
 }

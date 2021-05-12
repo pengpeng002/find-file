@@ -149,6 +149,7 @@ int KMP(char *str, char *ptr)
             return i+1;//返回相应的位置
         }
     }
+    delete []next;
     return 0;
 }
 

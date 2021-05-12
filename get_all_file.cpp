@@ -110,6 +110,7 @@ bool initUsnLog(DWORD &br)
 //获取USN Journal数据，即所有文件名
 void getUsnData(USN_JOURNAL_DATA &ujd, map<ll, vector<Fnode> > &ma)//获取USN Journal数据
 {
+//    cout<<"ma.size="<<ma.size()<<endl;
     char buf[buf_len];//缓冲区，大小为4K
     DWORD usnDataSize;//USN Journal数据的大小
     PUSN_RECORD usnRecord;
@@ -144,7 +145,8 @@ void checkType(int x)
 int getCheckType(const char* name)
 {
     QString s=QString::fromLocal8Bit(name);
-    if(s.endsWith(".jpg") || s.endsWith(".png") || s.endsWith(".bmp") || s.endsWith("gif")) return 3;//图片
+    s=s.toLower();
+    if(s.endsWith(".jpg") || s.endsWith(".png") || s.endsWith(".bmp") || s.endsWith("gif") || s.endsWith("jpeg")) return 3;//图片
     else if(s.endsWith(".mp4")) return 1;//视频
     else if(s.endsWith(".mp3") || s.endsWith(".m4a")) return 2;//音频
     else if(s.endsWith(".cpp") || s.endsWith(".c") || s.endsWith(".h") \
@@ -154,10 +156,11 @@ int getCheckType(const char* name)
     else if(s.endsWith(".exe")) return 6;//可执行文件
     else return -1;//类型未知
 }
-
+//vector<int> ves;
 //递归建树。参数为父节点位置，父节点文件编号，以及存储了文件信息的map
 void build(int fa, ll pfrn, map<ll, vector<Fnode> > &ma)
 {
+//    if(endx >= 50) return ;
     vector<Fnode> ve=ma[pfrn];//可认为ve是文件夹里的文件列表
     if(ve.size()==0)
     {
@@ -183,16 +186,21 @@ void build(int fa, ll pfrn, map<ll, vector<Fnode> > &ma)
 //获得某磁盘下的所有文件，并建树。参数为盘符以及根节点的位置
 void startGet(char* i, int head)
 {
+//    cout<<"start get "<<i<<", "<<head<<endl;
     if(getHandle(i))//成功获得了句柄
     {
         DWORD br;
         USN_JOURNAL_DATA ujd;
+//        cout<<"get handle ok\n";
         if(initUsnLog(br))//初始化成功
         {
+//            cout<<"init log ok\n";
             if(getUsnLogInformation(br, ujd))//信息获取成功
             {
+//                cout<<"get info ok\n";
                 map<ll, vector<Fnode> >ma;//pfrn映射子文件frn与文件名。因为一个文件夹可能会有多个文件，故为一对多，使用vector
                 getUsnData(ujd, ma);//获取所有文件名，并将该盘内的信息全部存入ma中
+//                cout<<"start build\n";
                 build(head, TrueRoot, ma);//根据ma里的内容建树
                 ma.clear();//情况
                 closeUsn(ujd, br);//打开了之后要记得关闭
@@ -200,4 +208,3 @@ void startGet(char* i, int head)
         }
     }
 }
-

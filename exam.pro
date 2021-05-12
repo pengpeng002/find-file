@@ -10,8 +10,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = exam
 TEMPLATE = app
-# CONFIG -= console
-
+CONFIG -= console
+RC_ICONS = Rewrite.ico
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -31,7 +31,8 @@ SOURCES += \
     get_all_file.cpp \
     search_in_tree.cpp \
     watcher.cpp \
-    setting.cpp
+    setting.cpp \
+    imagewidget.cpp
 
 HEADERS += \
         testclass.h \
@@ -40,7 +41,8 @@ HEADERS += \
     get_all_file.h \
     search_in_tree.h \
     watcher.h \
-    setting.h
+    setting.h \
+    imagewidget.h
 
 RESOURCES += \
     image.qrc

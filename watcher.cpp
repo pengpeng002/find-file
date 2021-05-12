@@ -119,13 +119,15 @@ void watcher(char* vol)
 void updateTree()
 {
     bool tempf=1;
-    while(1)
+//    qDebug() <<"start update tree\n";
+    while(Update_Is_Run)
     {
         if(!Update_Is_Run) return;
         ifstream in("C:\\Program Files\\FindFile\\update.dat", ios::in|ios::binary);
         //数据格式：操作 路径长度 路径 文件名长度 文件名
         if(in)
         {
+//            qDebug() << " read start";
             clock_t st=clock();
             int op, len;
             while(in.read((char*)&op, 4))
@@ -140,7 +142,7 @@ void updateTree()
                 vector<string> vst;
                 split(path, '\\', vst);
                 mu.lock();//加锁
-//                cout<<"op:"<<op<<", path:"<<path<<", name:"<<name<<endl;
+//                cout<<"op:"<<op<<", path:"<<path<<", name:"<<name;
                 if(op==0)
                     append(vst, name);//op=0 新增文件
                 else if(op==1)//op=1 删除文件
@@ -153,6 +155,7 @@ void updateTree()
 
             }
             in.close();
+//            qDebug() << "read com";
             clock_t ed=clock();
             if(tempf)
             {
@@ -163,8 +166,15 @@ void updateTree()
             no.close();
 //			system("del out.dat");
         }
+        else
+        {
+            qDebug() << "open fail";
+        }
         Sleep(1000);
+//        qDebug() << Update_Is_Run;
     }
+//    qDebug() <<"sdfsfsfsfsfs";
+    return;
 }
 
 //printf("File name: %s, ", file_name);
