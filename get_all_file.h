@@ -1,3 +1,4 @@
+//获取磁盘上的所有文件
 #ifndef GET_ALL_FILE_H
 #define GET_ALL_FILE_H
 #include <bits/stdc++.h>
